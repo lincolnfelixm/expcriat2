@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" lang="pt-BR">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Document</title>
+    <script src="recover.js" defer></script>
+</head>
+<body>
+    <header>
+        <h2 class="logo">WeCare Health</h2>
+        <nav class="navigation">
+            <a href="#">Home</a>
+            <a href="#">About</a>
+            <a href="#">Services</a>
+            <a href="#">Contact</a>
+            <button class="btnLogin-popup" onclick="showWrapper()">Login</button>
+        </nav>
+    </header>
+
+    <div class="wrapper">
+        <span class="icon-close">
+            <ion-icon name="close" onclick="closeWrapper()"></ion-icon>
+        </span>
+
+
+        <div class="form-box register">
+            <h2>Sign Up</h2>
+            <form id="registerForm">
+                <div class="input-box">
+                    <span class="icon">
+                        <ion-icon name="lock-closed"></ion-icon>
+                    </span>
+                    <input type="password" id="newPassword" required>
+                    <label>New Password</label>
+                </div>
+                <div class="input-box">
+                    <span class="icon">
+                        <ion-icon name="lock-closed"></ion-icon>
+                    </span>
+                    <input type="password" id="confirmPassword" required>
+                    <label>Confirm Password</label>
+                </div>
+                <div class="input-box">
+                    <span class="icon">
+                        <ion-icon name="lock-closed"></ion-icon>
+                    </span>
+                    <input type="text" id="token" required>
+                    <label>Token</label>
+                </div>
+                <button type="button" id="btnChangePassword" class="btn">Change Password</button>
+                <div class="login-register">
+                    <p>Already have an account? <a href="#" class="login-link" type="button" onclick="showLogin()">Login.</a></p>
+                </div>
+            </form>
+        </div>
+
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/sha256.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/enc-base64.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/aes.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsencrypt/3.0.0-rc.1/jsencrypt.min.js"></script>
+
+</body>
+</html>
