@@ -1,31 +1,39 @@
 <?php
     include 'conn.php';
 
-    $email = $_POST['email'];
-    $encryptedPassword = $_POST['password'];
-    $encryptionKey = $_POST['encryptionKey'];
+    $privateKey = openssl_pkey_get_private(file_get_contents("serverPrivateKey.pem"));
+    
+    $data = json_decode(file_get_contents('php://input'), true);
 
-    $privateKey = file_get_contents('serverPrivateKey.pem');
+    $encryptedUsername = $data['username'];
+    $encryptedPassword = $data['password'];
+    $encryptedSymmetricKey = base64_decode($data['symmetricKey']);
+    $encryptedIV = base64_decode($data['iv']);
+    
+    openssl_private_decrypt($encryptedSymmetricKey, $decryptedSymmetricKey, $privateKey);
+    openssl_private_decrypt($encryptedIV, $decryptedIV, $privateKey);
+    
+    // Convert hex string back to binary
+    $symmetricKey = hex2bin($decryptedSymmetricKey);
+    $iv = hex2bin($decryptedIV);
+    
+    $username = openssl_decrypt($encryptedUsername, 'aes-128-cbc', $symmetricKey, OPENSSL_RAW_DATA, $iv);
+    $password = openssl_decrypt($encryptedPassword, 'aes-128-cbc', $symmetricKey, OPENSSL_RAW_DATA, $iv);
 
-    openssl_private_decrypt(base64_decode($encryptionKey), $decryptedEncryptionKey, $privateKey);
-
-    $decryptedPassword = openssl_decrypt(base64_decode($encryptedPassword), 'AES-128-ECB', $decryptedEncryptionKey, OPENSSL_RAW_DATA);
-
-    $query = "SELECT * FROM users WHERE email = '$email' AND password = '$decryptedPassword'";
+    $query = "SELECT * FROM users WHERE username = '$username' AND password = '$password'";
+    
     $result = mysqli_query($conn, $query);
-
-    if (mysqli_num_rows($result) == 0) {
-        http_response_code(401);
-        echo 'Invalid email or password';
+    if(mysqli_num_rows($result) > 0) {
+        $response = [
+            "success" => true,
+            "message" => "User logged in successfully"
+        ];
+        echo json_encode($response);
     } else {
-        session_start();
-
-        $_SESSION['email'] = $email;
-        $_SESSION['password'] = $decryptedPassword;
-        $_SESSION['start_time'] = time();
-        $_SESSION['expire_time'] = $_SESSION['start_time'] + (60 * 60);
-
-        http_response_code(200);
-        echo 'Login successful';
+        $response = [
+            "success" => false,
+            "message" => "User not found"
+        ];
+        echo json_encode($response);
     }
 ?>

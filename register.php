@@ -1,64 +1,44 @@
 <?php
-    // Include the database connection file
-    include 'conn.php';
+include 'conn.php';
 
-    $encryptedUsername = $_POST['username'];
-    $encryptedEmail = $_POST['email'];
-    $encryptedPassword = $_POST['password'];
-    $encryptionKey = $_POST['encryptionKey'];
+$privateKey = openssl_pkey_get_private(file_get_contents("serverPrivateKey.pem"));
 
-    // Fetch the private key from a file (assuming it's stored in privateKey.txt)
-    $privateKey = file_get_contents('serverPrivateKey.pem');
+$data = json_decode(file_get_contents('php://input'), true);
+$encryptedUsername = base64_decode($data['username']);
+$encryptedEmail = base64_decode($data['email']);
+$encryptedPassword = base64_decode($data['password']);
+$encryptedSymmetricKey = base64_decode($data['symmetricKey']);
+$encryptedIV = base64_decode($data['iv']);
 
-    // Decrypt the encryption key using the private key
-    openssl_private_decrypt(base64_decode($encryptionKey), $decryptedEncryptionKey, $privateKey);
+openssl_private_decrypt($encryptedSymmetricKey, $symmetricKey, $privateKey);
 
-    // Decrypt the username, email, and password using the decrypted encryption key
-    $decryptedUsername = openssl_decrypt(base64_decode($encryptedUsername), 'AES-128-ECB', $decryptedEncryptionKey, OPENSSL_RAW_DATA);
-    $decryptedEmail = openssl_decrypt(base64_decode($encryptedEmail), 'AES-128-ECB', $decryptedEncryptionKey, OPENSSL_RAW_DATA);
-    $decryptedPassword = openssl_decrypt(base64_decode($encryptedPassword), 'AES-128-ECB', $decryptedEncryptionKey, OPENSSL_RAW_DATA);
+// decrypt iv
+openssl_private_decrypt($encryptedIV, $ivHex, $privateKey);
+$iv = pack('H*', $ivHex); // convert hex to bytes
 
-    // Check if the email is valid
-    if (!filter_var($decryptedEmail, FILTER_VALIDATE_EMAIL)) {
-        http_response_code(400);
-        echo 'Invalid email address';
-        exit();
-    }
+$username = openssl_decrypt($encryptedUsername, 'aes-128-cbc', $symmetricKey, OPENSSL_RAW_DATA, $iv);
+$email = openssl_decrypt($encryptedEmail, 'aes-128-cbc', $symmetricKey, OPENSSL_RAW_DATA, $iv);
+$password = openssl_decrypt($encryptedPassword, 'aes-128-cbc', $symmetricKey, OPENSSL_RAW_DATA, $iv);
 
-    // Check if the terms and conditions are accepted
-    if (!isset($_POST['terms']) || $_POST['terms'] !== 'accepted') {
-        http_response_code(400);
-        echo 'Please accept the terms and conditions';
-        exit();
-    }
+$query = "INSERT INTO users (username, email, password, token) VALUES (?, ?, ?, NULL)";
 
-    // Check if the email is already registered in the database
-    $query = "SELECT * FROM users WHERE email = '$decryptedEmail'";
-    $result = mysqli_query($conn, $query);
+$stmt = $conn->prepare($query);
+$stmt->bind_param("sss", $username, $email, $password);
 
-    if (mysqli_num_rows($result) > 0) {
-        http_response_code(409);
-        echo 'Email already registered';
-        exit();
-    }
+if ($stmt->execute()) {
+    $response = [
+        "success" => true,
+        "message" => "User registered successfully"
+    ];
+    echo json_encode($response);
+} else {
+    $response = [
+        "success" => false,
+        "message" => "User not registered"
+    ];
+    echo json_encode($response);
+}
 
-    // Insert the user into the database
-    $query = "INSERT INTO users (username, email, password) VALUES ('$decryptedUsername', '$decryptedEmail', '$decryptedPassword')";
-    if (mysqli_query($conn, $query)) {
-        // Start the session
-        session_start();
-
-        // Set the session variables
-        $_SESSION['email'] = $decryptedEmail;
-        $_SESSION['password'] = $decryptedPassword;
-        $_SESSION['start_time'] = time();
-        $_SESSION['expire_time'] = $_SESSION['start_time'] + (60 * 60); // 1 hour expiration
-
-        // Send an HTTP 200 response
-        http_response_code(200);
-        echo 'Registration successful';
-    } else {
-        http_response_code(500);
-        echo 'Error occurred during registration';
-    }
+$stmt->close();
+$conn->close();
 ?>

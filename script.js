@@ -55,32 +55,52 @@ async function fetchPublicKey(filename) {
 
 // Define the login function
 async function login() {
-    const email = document.getElementById("login-email").value;
-    let password = document.getElementById("login-passwd").value;
+    let username = document.getElementById("login-username").value;
+    let password = document.getElementById("login-password").value;
+    let hashedPassword = hash(password); // Defined in script.js
 
-    password = hash(password);
+    let publicKey = await fetchPublicKey('serverPublicKey.pem'); // Defined in script.js
+    let encrypt = new JSEncrypt();
+    let symmetricKey = CryptoJS.lib.WordArray.random(16);
+    let iv = CryptoJS.lib.WordArray.random(16); // initialization vector
+    encrypt.setPublicKey(publicKey);
+    
+    // Encrypt using symmetric key (AES)
+    let encryptedUsername = CryptoJS.AES.encrypt(username, symmetricKey, {
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
+    });
+    let encryptedPassword = CryptoJS.AES.encrypt(hashedPassword, symmetricKey, {
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
+    });
+    
+    let encryptedSymmetricKey = encrypt.encrypt(symmetricKey.toString(CryptoJS.enc.Hex));
+    let encryptedIV = encrypt.encrypt(iv.toString(CryptoJS.enc.Hex));
 
-    const publicKey = await fetchPublicKey('serverPublicKey.pem');
-
-    const encryptionKey = CryptoJS.lib.WordArray.random(16); // 16 bytes (128 bits)
-    const encryptedPassword = CryptoJS.AES.encrypt(password, publicKey).toString();
-
-    const loginData = {
-        email: email,
-        password: encryptedPassword,
-        encryptionKey: encryptionKey.toString()
+    let loginData = {
+        'username': encryptedUsername.toString(),
+        'password': encryptedPassword.toString(),
+        'symmetricKey': encryptedSymmetricKey,
+        'iv': encryptedIV
     };
 
     fetch('login.php', {
         method: 'POST',
-        body: JSON.stringify(loginData),
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(loginData)
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            console.log(data.message);
+            alert(data.message);
+            window.location.href = "main.html";
         } else {
-            console.log(data.message);
+            alert(data.message);
         }
     })
     .catch(error => {
@@ -91,7 +111,8 @@ async function login() {
 async function register() {
     let username = document.getElementById("register-username").value;
     let email = document.getElementById("register-email").value;
-    let password = document.getElementById("register-passwd").value;
+    let password = document.getElementById("register-password").value;
+    let hashedPassword = hash(password);
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -105,33 +126,54 @@ async function register() {
         return;
     }
 
-    password = hash(password);
+    let publicKey = await fetchPublicKey('serverPublicKey.pem');
+    let encrypt = new JSEncrypt();
+    let symmetricKey = CryptoJS.lib.WordArray.random(16);
+    let iv = CryptoJS.lib.WordArray.random(16); // initialization vector
+    encrypt.setPublicKey(publicKey);
 
-    const publicKey = await fetchPublicKey('serverPublicKey.pem');
+    // Encrypt using symmetric key (AES)
+    let encryptedUsername = CryptoJS.AES.encrypt(username, symmetricKey, {
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
+    });
+    let encryptedEmail = CryptoJS.AES.encrypt(email, symmetricKey, {
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
+    });
+    let encryptedPassword = CryptoJS.AES.encrypt(hashedPassword, symmetricKey, {
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
+    });
 
-    const encryptionKey = CryptoJS.lib.WordArray.random(16); // 16 bytes (128 bits)
+    let encryptedSymmetricKey = encrypt.encrypt(symmetricKey.toString(CryptoJS.enc.Hex));
+    let encryptedIV = encrypt.encrypt(iv.toString(CryptoJS.enc.Hex));
 
-    const encryptedUsername = CryptoJS.AES.encrypt(username, publicKey).toString();
-    const encryptedEmail = CryptoJS.AES.encrypt(email, publicKey).toString();
-    const encryptedPassword = CryptoJS.AES.encrypt(password, publicKey).toString();
-
-    const registerData = {
-        username: encryptedUsername,
-        email: encryptedEmail,
-        password: encryptedPassword,
-        encryptionKey: encryptionKey.toString(),
+    let registerData = {
+        username: encryptedUsername.toString(),
+        email: encryptedEmail.toString(),
+        password: encryptedPassword.toString(),
+        symmetricKey: encryptedSymmetricKey,
+        iv: encryptedIV
     };
 
     fetch('register.php', {
         method: 'POST',
         body: JSON.stringify(registerData),
+        headers: {
+            'Content-Type': 'application/json'
+        }
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            console.log(data.message);
+            alert(data.message);
+            showLogin();
         } else {
-            console.log(data.message);
+            alert(data.message);
         }
     })
     .catch(error => {
@@ -141,37 +183,33 @@ async function register() {
 
 async function recover() {
     const email = document.querySelector(".form-box.forgot input[type='email']").value;
-  
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       alert('Please enter a valid email address.');
       return;
     }
-  
+
     const publicKey = await fetchPublicKey('serverPublicKey.pem');
-  
+
     const encryptedEmail = CryptoJS.AES.encrypt(email, publicKey).toString();
-  
+
     const recoverData = {
       email: encryptedEmail,
     };
-  
+
     fetch('recover.php', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(recoverData),
     })
       .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          console.log(data.message);
-        } else {
-          console.log(data.message);
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-      });
+      .then(data => console.log(data.message))
+      .catch(console.error);
 }
+
   
 function goMain(){
     window.location.href = "index.html";

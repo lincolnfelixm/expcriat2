@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="style.css">
     <title>Document</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsencrypt/2.3.1/jsencrypt.min.js"></script>
     <script src="script.js" defer></script>
 </head>
 <body>
@@ -26,15 +27,15 @@
         </span>
         <div class="form-box login">
             <h2>Login</h2>
-            <form action="#">
+            <form action="#" id="loginForm">
                 <div class="input-box">
                     <span class="icon"><ion-icon name="mail"></ion-icon></span>
-                    <input type="email" id="login-email" required>
+                    <input type="email" id="login-username" required>
                     <label>E-mail</label>
                 </div>
                 <div class="input-box">
                     <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
-                    <input type="password" id="login-passwd" required>
+                    <input type="password" id="login-password" required>
                     <label>Password</label>
                 </div>
                 <div class="remember-forgot">
@@ -56,17 +57,17 @@
             <form action="#">
                 <div class="input-box">
                     <span class="icon"><ion-icon name="person"></ion-icon></span>
-                    <input type="text" required>
+                    <input type="text" id="register-username" required>
                     <label>Username</label>
                 </div>
                 <div class="input-box">
                     <span class="icon"><ion-icon name="mail"></ion-icon></span>
-                    <input type="email" required>
+                    <input type="email" id="register-email" required>
                     <label>E-mail</label>
                 </div>
                 <div class="input-box">
                     <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
-                    <input type="password" required>
+                    <input type="password" id="register-password" required>
                     <label>Password</label>
                 </div>
                 <div class="remember-forgot">
@@ -74,7 +75,7 @@
                         <input type="checkbox">I agree to the terms & conditions.
                     </label>
                 </div>
-                <button type="button" class="btn">Sign Up</button>
+                <button type="button" class="btn" onclick="register()">Sign Up</button>
                 <div class="login-register">
                     <p>Already have an account? <a href="#" class="login-link" type="button" onclick="showLogin()">Login.</a></p>
                 </div>
